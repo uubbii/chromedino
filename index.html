@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f7f7f7;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+  <title>Chrome Dino Game</title>
+</head>
+<body>
+  <canvas id="dinoCanvas" width="600" height="200"></canvas>
+
+  <script>
+    const canvas = document.getElementById('dinoCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const dinoImg = new Image();
+    dinoImg.src = 'dino.png'; // 공룡 이미지 파일 경로
+
+    const obstacleImg = new Image();
+    obstacleImg.src = 'obstacle.png'; // 장애물 이미지 파일 경로
+
+    const dino = {
+      x: 50,
+      y: 130,
+      width: 40,
+      height: 40,
+      jump: false,
+      jumpHeight: 0,
+      jumpLimit: 100,
+    };
+
+    const obstacle = {
+      x: canvas.width,
+      y: 130,
+      width: 40,
+      height: 40,
+      speed: 5,
+    };
+
+    let score = 0;
+    let obstacleFrequency = 120; // 초기 장애물 생성 주기
+
+    function drawDino() {
+      ctx.drawImage(dinoImg, dino.x, dino.y - dino.jumpHeight, dino.width, dino.height);
+    }
+
+    function drawObstacle() {
+      ctx.drawImage(obstacleImg, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    }
+
+    function drawScore() {
+      ctx.fillStyle = '#000';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Score: ${score}`, 10, 20);
+    }
+
+    function update() {
+      if (dino.jump) {
+        dino.jumpHeight += 5;
+        if (dino.jumpHeight >= dino.jumpLimit) {
+          dino.jump = false;
+        }
+      } else if (dino.jumpHeight > 0) {
+        dino.jumpHeight -= 5;
+      }
+
+      obstacle.x -= obstacle.speed;
+
+      if (obstacle.x + obstacle.width < 0) {
+        obstacle.x = canvas.width;
+        score++;
+
+        // 점수가 10점씩 오를 때마다 속도를 증가시키고, 장애물을 더 빈번하게 생성
+        if (score % 10 === 0) {
+          obstacle.speed += 1;
+          obstacleFrequency -= 5;
+        }
+      }
+
+      // 충돌 검사
+      if (
+        dino.x < obstacle.x + obstacle.width &&
+        dino.x + dino.width > obstacle.x &&
+        dino.y - dino.jumpHeight < obstacle.y + obstacle.height &&
+        dino.y - dino.jumpHeight + dino.height > obstacle.y
+      ) {
+        // 공룡이 장애물에 닿으면 게임 종료
+        alert(`Game Over! Your Score: ${score}`);
+        resetGame();
+      }
+    }
+
+    function resetGame() {
+      dino.jump = false;
+      dino.jumpHeight = 0;
+      obstacle.x = canvas.width;
+      obstacle.speed = 5;
+      obstacleFrequency = 120;
+      score = 0;
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawDino();
+      drawObstacle();
+      drawScore();
+      update();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function jump() {
+      if (!dino.jump && dino.jumpHeight === 0) {
+        dino.jump = true;
+      }
+    }
+
+    document.addEventListener('keydown', function (event) {
+      if (event.code === 'Space') {
+        jump();
+      }
+    });
+
+    canvas.addEventListener('click', function () {
+      jump();
+    });
+
+    // 이미지가 로드된 후에 게임 루프를 시작합니다.
+    Promise.all([
+      new Promise(resolve => dinoImg.onload = resolve),
+      new Promise(resolve => obstacleImg.onload = resolve),
+    ]).then(() => {
+      gameLoop();
+    });
+  </script>
+</body>
+</html>

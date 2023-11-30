@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f7f7f7;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #f7f7f7;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    <title>Chrome Dino Game</title>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="200"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const dinoImg = new Image();
+        dinoImg.src = 'dino.png';
+
+        const obstacleImg = new Image();
+        obstacleImg.src = 'obstacle.png';
+
+        const jumpSound = new Audio('jump.mp3');
+        const gameOverSound = new Audio('gameover.mp3');
+
+        const dino = {
+            x: 50,
+            y: 120,
+            width: 50,
+            height: 50,
+            velocity: 0,
+            jumping: false
+        };
+
+        const obstacles = [];
+        let score = 0;
+        let gameSpeed = 5;
+
+        function drawDino() {
+            ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
+        }
+
+        function drawObstacles() {
+            for (const obstacle of obstacles) {
+                ctx.drawImage(obstacleImg, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+        }
+
+        function generateObstacle() {
+            const obstacle = {
+                x: canvas.width,
+                y: 120,
+                width: 30 + Math.random() * 20,
+                height: 30 + Math.random() * 70
+            };
+            obstacles.push(obstacle);
+        }
+
+        function jump() {
+            if (!dino.jumping) {
+                dino.jumping = true;
+                dino.velocity = -15;
+                jumpSound.play();
+            }
+        }
+
+        function update() {
+            if (dino.jumping) {
+                dino.y += dino.velocity;
+                dino.velocity += 1;
+
+                if (dino.y > 120) {
+                    dino.y = 120;
+                    dino.jumping = false;
+                }
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= gameSpeed;
+
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    score++;
+                    if (score % 10 === 0) {
+                        gameSpeed += 1; // Increase game speed every 10 points
+                    }
+                }
+
+                if (
+                    dino.x < obstacles[i].x + obstacles[i].width &&
+                    dino.x + dino.width > obstacles[i].x &&
+                    dino.y < obstacles[i].y + obstacles[i].height &&
+                    dino.y + dino.height > obstacles[i].y
+                ) {
+                    gameOver();
+                }
+            }
+        }
+
+        function gameOver() {
+            gameOverSound.play();
+            alert('Game Over! Your score: ' + score);
+            resetGame();
+        }
+
+        function resetGame() {
+            obstacles.length = 0;
+            score = 0;
+            gameSpeed = 5;
+            dino.y = 120;
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawDino();
+            drawObstacles();
+            update();
+
+            if (Math.random() < 0.02) {
+                generateObstacle();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.code === 'Space' || event.code === 'ArrowUp') {
+                jump();
+            }
+        });
+
+        dinoImg.onload = function() {
+            obstacleImg.onload = function() {
+                gameLoop();
+            };
+        };
+    </script>
+</body>
+</html>
